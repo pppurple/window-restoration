@@ -1,91 +1,93 @@
 # Window Restoration
 
-ディスプレイ構成ごとにmacOSのウィンドウ位置とサイズを保存・復元する、メニューバー常駐アプリです。
+English | [日本語](README_ja.md)
 
-現在はMVPとして、次の機能を実装しています。
+A macOS menu bar app that saves and restores window positions and sizes for each display configuration.
 
-- 接続中ディスプレイのUUID、配置、倍率による構成識別
-- 現在開いているウィンドウの位置・サイズの保存
-- 現在のディスプレイ構成に対応する配置の復元
-- 接続中および保存済みモニターの一覧表示と表示名設定
-- 保存済み構成のモニター名、ウィンドウ数、保存日時の表示
-- メニューバーからの操作
-- Accessibility権限の案内
+The current MVP provides the following features:
 
-## 必要環境
+- Identifies display configurations by connected display UUIDs, arrangement, and scale factors
+- Saves the positions and sizes of currently open windows
+- Restores the layout associated with the current display configuration
+- Lists connected and previously saved displays and lets you assign friendly names
+- Shows display names, window counts, and save times for saved configurations
+- Provides controls from the menu bar
+- Guides you through granting Accessibility permission
 
-- macOS 13以降
-- Swift 5.10以降（XcodeまたはXcode Command Line Tools）
+## Requirements
 
-## ビルド
+- macOS 13 or later
+- Swift 5.10 or later, provided by Xcode or Xcode Command Line Tools
+
+## Build
 
 ```sh
 ./scripts/build-app.sh
 ```
 
-生成物は `dist/Window Restoration.app` です。Finderで開くか、必要に応じて `/Applications` へコピーしてください。
+The app is generated at `dist/Window Restoration.app`. Open it in Finder or copy it to `/Applications` as needed.
 
-ビルドスクリプトは、インストールされているSwiftコンパイラと互換性のあるmacOS SDKを自動選択します。SDKを明示する場合は `WINDOW_RESTORATION_SDKROOT` を指定できます。
+The build script automatically selects a macOS SDK compatible with the installed Swift compiler. To select an SDK explicitly, set `WINDOW_RESTORATION_SDKROOT`.
 
-スクリプトに実行権限がない場合は、最初に次を実行します。
+If the script is not executable, run this once:
 
 ```sh
 chmod +x scripts/build-app.sh
 ```
 
-## 使い方
+## Usage
 
-1. `Window Restoration.app` を起動する
-2. メニューバーのウィンドウアイコンを押す
-3. 「アクセシビリティ権限を許可」を押し、システム設定で許可する
-4. アプリへ戻り「状態を再確認」を押す
-5. ウィンドウを配置して「現在の配置を保存」を押す
-6. 配置が崩れたら「保存した配置を復元」を押す
+1. Launch `Window Restoration.app`.
+2. Click the window icon in the menu bar.
+3. Click **権限を許可** (Grant Permission) and allow the app in System Settings.
+4. Return to the app and click **状態を再確認** (Refresh Status).
+5. Arrange your windows and click **現在の配置を保存** (Save Current Layout).
+6. If the layout changes, click **保存した配置を復元** (Restore Saved Layout).
 
-「モニター」欄の「名前を変更」ボタン、またはモニター名のダブルクリックから、「自宅モニター」「会社24インチモニター」「MacBookのモニター」など任意の表示名を入力できます。この名前は画面表示専用で、内部では引き続きmacOSのディスプレイUUIDを使って構成を識別します。
+To give a display a friendly name such as “Home Monitor,” “Office 24-inch Monitor,” or “MacBook Display,” click **名前を変更** (Rename) in the Displays section or double-click the display name. Friendly names are used only in the interface; display configurations continue to be identified internally by their macOS display UUIDs.
 
-### 許可済みなのにアクセシビリティ権限を求められる場合
+### If the app requests Accessibility permission even though it is already enabled
 
-以前のビルドは、ビルドのたびにmacOSから別アプリと判定されるアドホック署名になっていました。現在のビルドスクリプトでは、再ビルド後も同じアプリとして判定される署名要件を使用します。
+Older builds used an ad-hoc signature that caused macOS to treat each rebuild as a different app. The current build script embeds a stable designated requirement so rebuilt versions are recognized as the same app.
 
-すでに古いビルドを登録している場合は、一度だけ次の操作が必要です。
+If an older build is already registered, complete the following steps once:
 
-1. Window Restorationを終了する
-2. システム設定の「プライバシーとセキュリティ」→「アクセシビリティ」を開く
-3. 既存の `Window Restoration.app` を選び、一覧下部の `−` で削除する
-4. `./scripts/build-app.sh` で再ビルドする
-5. 今後使用する場所へアプリを置いてから起動する
-6. アクセシビリティ一覧へ追加し、スイッチをONにする
+1. Quit Window Restoration.
+2. Open **System Settings → Privacy & Security → Accessibility**.
+3. Select the existing `Window Restoration.app` and remove it with the `−` button.
+4. Rebuild the app with `./scripts/build-app.sh`.
+5. Move the app to the location where you intend to keep it, then launch it.
+6. Add the app to the Accessibility list and enable it.
 
-このアプリは個人利用を前提としているため、ローカルのBundle IDを明示したアドホック署名を使っています。同じBundle IDを持つ信頼できないアプリは実行しないでください。
+This app is intended for personal use and uses an ad-hoc signature with an explicit local bundle identifier. Do not run untrusted apps that use the same bundle identifier.
 
-権限を確認するときは、Xcodeの再生ボタンや `swift run` から起動せず、上記手順で生成して固定した場所の `Window Restoration.app` を起動してください。XcodeやSwift Package Managerのビルドディレクトリにある実行ファイルは、設定へ登録した `.app` とは別のアプリとして扱われます。
+When checking permissions, launch the `Window Restoration.app` generated above from its permanent location. Do not launch it with Xcode's Run button or `swift run`: executables in Xcode or Swift Package Manager build directories are treated as different apps from the registered `.app` bundle.
 
-保存データは次の場所にJSONとして作成されます。
+Layout data is stored as JSON at:
 
 ```text
 ~/Library/Application Support/WindowRestoration/profiles/
 ```
 
-## 現在の制約
+## Current limitations
 
-- 開いているアプリやウィンドウ自体は起動しません。
-- macOSの別Spaceにあるウィンドウ、フルスクリーン、タイル表示は対象外です。
-- 一部のアプリはAccessibility APIによる移動・リサイズを拒否します。
-- 自動保存・自動復元はまだ実装していません。
+- The app does not launch applications or open windows that are not already running.
+- Windows in other macOS Spaces, full-screen windows, and tiled windows are not supported.
+- Some applications reject move or resize operations through the Accessibility API.
+- Automatic saving and restoration are not implemented yet.
 
-## テスト
+## Tests
 
 ```sh
 swift test
 ```
 
-テストの実行には、SwiftコンパイラとSDKのバージョンが揃ったXcode環境およびXCTestが必要です。
+Running the tests requires Xcode with matching Swift compiler and SDK versions, including XCTest.
 
-## 今後の候補
+## Possible future improvements
 
-- ウィンドウ作成・移動・リサイズ通知を使ったdebounce付き自動保存
-- ディスプレイ切り替え時の自動復元
-- 復元中およびディスプレイ変更中の自動保存停止
-- 保存履歴と「ひとつ前に戻す」
-- アプリ単位の除外設定
+- Debounced automatic saving using window creation, move, and resize notifications
+- Automatic restoration when the display configuration changes
+- Suspending automatic saves during display transitions and restoration
+- Layout history and an “Undo Last Restore” action
+- Per-application exclusion settings
