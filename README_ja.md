@@ -29,6 +29,8 @@
 
 ビルドスクリプトは、インストールされているSwiftコンパイラと互換性のあるmacOS SDKを自動選択します。SDKを明示する場合は `WINDOW_RESTORATION_SDKROOT` を指定できます。
 
+既定のビルド構成は `debug` です。Releaseビルドを作成する場合は `WINDOW_RESTORATION_CONFIGURATION=release` を指定します。
+
 スクリプトに実行権限がない場合は、最初に次を実行します。
 
 ```sh
