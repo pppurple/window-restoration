@@ -29,6 +29,8 @@ The app is generated at `dist/Window Restoration.app`. Open it in Finder or copy
 
 The build script automatically selects a macOS SDK compatible with the installed Swift compiler. To select an SDK explicitly, set `WINDOW_RESTORATION_SDKROOT`.
 
+The default build configuration is `debug`. Set `WINDOW_RESTORATION_CONFIGURATION=release` to create a release build.
+
 If the script is not executable, run this once:
 
 ```sh

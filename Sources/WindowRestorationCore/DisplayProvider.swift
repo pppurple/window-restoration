@@ -21,28 +21,40 @@ public struct DisplayProvider {
     public init() {}
 
     public func currentConfiguration() throws -> DisplayConfiguration {
-        var count: UInt32 = 0
-        var result = CGGetActiveDisplayList(0, nil, &count)
-        guard result == .success else {
-            throw DisplayProviderError.unableToReadDisplays(result)
-        }
-
-        var displayIDs = [CGDirectDisplayID](repeating: 0, count: Int(count))
-        result = CGGetActiveDisplayList(count, &displayIDs, &count)
-        guard result == .success else {
-            throw DisplayProviderError.unableToReadDisplays(result)
-        }
-
         let screensByID: [CGDirectDisplayID: NSScreen] = Dictionary(
             uniqueKeysWithValues: NSScreen.screens.compactMap { screen -> (CGDirectDisplayID, NSScreen)? in
-            guard let number = screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber else {
-                return nil
-            }
-            return (CGDirectDisplayID(number.uint32Value), screen)
+                guard let number = screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber else {
+                    return nil
+                }
+                return (CGDirectDisplayID(number.uint32Value), screen)
             }
         )
 
-        let displays = displayIDs.prefix(Int(count)).map { displayID in
+        // Asking Core Graphics for the count with maxDisplays == 0 can
+        // temporarily return zero during display reconfiguration on recent
+        // macOS versions. Read into a sufficiently large buffer in one call.
+        var displayBuffer = [CGDirectDisplayID](repeating: 0, count: 32)
+        var count: UInt32 = 0
+        let result = CGGetActiveDisplayList(
+            UInt32(displayBuffer.count),
+            &displayBuffer,
+            &count
+        )
+
+        let displayIDs: [CGDirectDisplayID]
+        if result == .success, count > 0 {
+            displayIDs = Array(displayBuffer.prefix(Int(count)))
+        } else if !screensByID.isEmpty {
+            // NSScreen already represents the displays available to AppKit and
+            // is a safe fallback while Core Graphics is between states.
+            displayIDs = Array(screensByID.keys)
+        } else if result != .success {
+            throw DisplayProviderError.unableToReadDisplays(result)
+        } else {
+            throw DisplayProviderError.noDisplays
+        }
+
+        let displays = displayIDs.map { displayID in
             let bounds = CGDisplayBounds(displayID)
             let screen = screensByID[displayID]
             return DisplaySnapshot(

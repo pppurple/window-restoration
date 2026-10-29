@@ -36,6 +36,7 @@ final class AppModel: ObservableObject {
     private var currentConfiguration: DisplayConfiguration?
     private var cachedProfiles: [LayoutProfile] = []
     private var screenObserver: NSObjectProtocol?
+    private var pendingScreenRefresh: DispatchWorkItem?
 
     init() {
         customNames = (try? nameStore.load()) ?? [:]
@@ -45,13 +46,14 @@ final class AppModel: ObservableObject {
             queue: .main
         ) { [weak self] _ in
             MainActor.assumeIsolated {
-                self?.refreshState()
+                self?.scheduleScreenRefresh()
             }
         }
         refreshState()
     }
 
     deinit {
+        pendingScreenRefresh?.cancel()
         if let screenObserver {
             NotificationCenter.default.removeObserver(screenObserver)
         }
@@ -72,8 +74,18 @@ final class AppModel: ObservableObject {
                 statusMessage = "確認結果：アクセシビリティは\(permission)、接続中モニターは\(configuration.displays.count)台、保存済み構成は\(profiles.count)件、現在の構成は\(currentProfile)です。"
             }
         } catch {
+            currentConfiguration = nil
             configurationSummary = "取得できません"
             hasSavedProfile = false
+            knownDisplays = knownDisplays.map {
+                DisplayStatus(
+                    id: $0.id,
+                    systemName: $0.systemName,
+                    displayName: $0.displayName,
+                    isBuiltIn: $0.isBuiltIn,
+                    isConnected: false
+                )
+            }
             statusMessage = error.localizedDescription
         }
     }
@@ -196,6 +208,17 @@ final class AppModel: ObservableObject {
             return display.name
         }
         return customName
+    }
+
+    private func scheduleScreenRefresh() {
+        pendingScreenRefresh?.cancel()
+        let workItem = DispatchWorkItem { [weak self] in
+            MainActor.assumeIsolated {
+                self?.refreshState()
+            }
+        }
+        pendingScreenRefresh = workItem
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1, execute: workItem)
     }
 
     private func ensureAccessibilityPermission() -> Bool {
