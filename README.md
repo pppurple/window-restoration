@@ -11,6 +11,7 @@ The current MVP provides the following features:
 - Restores the layout associated with the current display configuration
 - Lists connected and previously saved displays and lets you assign friendly names
 - Shows display names, window counts, and save times for saved configurations
+- Can launch automatically when you log in to macOS
 - Provides controls from the menu bar
 - Guides you through granting Accessibility permission
 
@@ -45,6 +46,9 @@ chmod +x scripts/build-app.sh
 4. Return to the app and click **状態を再確認** (Refresh Status).
 5. Arrange your windows and click **現在の配置を保存** (Save Current Layout).
 6. If the layout changes, click **保存した配置を復元** (Restore Saved Layout).
+7. Optionally enable **ログイン時に起動** (Launch at Login) in the Settings section.
+
+The app should be placed in `/Applications` or another permanent location before enabling Launch at Login. If macOS requires approval, use **ログイン項目を開く** (Open Login Items) and allow the app in System Settings.
 
 To give a display a friendly name such as “Home Monitor,” “Office 24-inch Monitor,” or “MacBook Display,” click **名前を変更** (Rename) in the Displays section or double-click the display name. Friendly names are used only in the interface; display configurations continue to be identified internally by their macOS display UUIDs.
 
