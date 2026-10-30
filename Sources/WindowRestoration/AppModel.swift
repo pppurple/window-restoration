@@ -1,6 +1,7 @@
 import AppKit
 import Combine
 import Foundation
+import ServiceManagement
 import WindowRestorationCore
 
 struct DisplayStatus: Identifiable, Equatable {
@@ -25,6 +26,8 @@ final class AppModel: ObservableObject {
     @Published private(set) var hasSavedProfile = false
     @Published private(set) var statusMessage = ""
     @Published private(set) var isAccessibilityTrusted = false
+    @Published private(set) var isLaunchAtLoginEnabled = false
+    @Published private(set) var launchAtLoginRequiresApproval = false
     @Published private(set) var knownDisplays: [DisplayStatus] = []
     @Published private(set) var savedProfiles: [SavedProfileStatus] = []
 
@@ -61,6 +64,7 @@ final class AppModel: ObservableObject {
 
     func refreshState(showConfirmation: Bool = false) {
         isAccessibilityTrusted = windows.isTrusted
+        refreshLaunchAtLoginState()
         do {
             let configuration = try displays.currentConfiguration()
             let profiles = try store.loadAll()
@@ -71,7 +75,10 @@ final class AppModel: ObservableObject {
             if showConfirmation {
                 let permission = isAccessibilityTrusted ? "許可済み" : "未許可"
                 let currentProfile = hasSavedProfile ? "保存済み" : "未保存"
-                statusMessage = "確認結果：アクセシビリティは\(permission)、接続中モニターは\(configuration.displays.count)台、保存済み構成は\(profiles.count)件、現在の構成は\(currentProfile)です。"
+                let launchAtLogin = launchAtLoginRequiresApproval
+                    ? "承認待ち"
+                    : (isLaunchAtLoginEnabled ? "有効" : "無効")
+                statusMessage = "確認結果：アクセシビリティは\(permission)、ログイン時起動は\(launchAtLogin)、接続中モニターは\(configuration.displays.count)台、保存済み構成は\(profiles.count)件、現在の構成は\(currentProfile)です。"
             }
         } catch {
             currentConfiguration = nil
@@ -123,6 +130,38 @@ final class AppModel: ObservableObject {
             string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"
         ) else { return }
         NSWorkspace.shared.open(url)
+    }
+
+    func setLaunchAtLoginEnabled(_ enabled: Bool) {
+        let service = SMAppService.mainApp
+        do {
+            if enabled {
+                guard service.status != .enabled else { return }
+                try service.register()
+            } else {
+                guard service.status != .notRegistered else { return }
+                try service.unregister()
+            }
+            refreshLaunchAtLoginState()
+            if launchAtLoginRequiresApproval {
+                statusMessage = "ログイン時起動にはシステム設定での許可が必要です。"
+            } else {
+                statusMessage = enabled
+                    ? "ログイン時に起動するよう設定しました。"
+                    : "ログイン時に起動しないよう設定しました。"
+            }
+        } catch {
+            refreshLaunchAtLoginState()
+            if launchAtLoginRequiresApproval {
+                statusMessage = "ログイン時起動にはシステム設定での許可が必要です。"
+            } else {
+                statusMessage = "ログイン時起動を変更できませんでした：\(error.localizedDescription)"
+            }
+        }
+    }
+
+    func openLoginItemsSettings() {
+        SMAppService.openSystemSettingsLoginItems()
     }
 
     func saveCurrentLayout() {
@@ -208,6 +247,12 @@ final class AppModel: ObservableObject {
             return display.name
         }
         return customName
+    }
+
+    private func refreshLaunchAtLoginState() {
+        let status = SMAppService.mainApp.status
+        isLaunchAtLoginEnabled = status == .enabled
+        launchAtLoginRequiresApproval = status == .requiresApproval
     }
 
     private func scheduleScreenRefresh() {

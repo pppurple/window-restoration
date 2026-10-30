@@ -45,6 +45,7 @@ private struct MenuBarContent: View {
                 VStack(alignment: .leading, spacing: 16) {
                     displaySection
                     profileSection
+                    loginItemSection
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
@@ -134,6 +135,34 @@ private struct MenuBarContent: View {
                     .padding(8)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .background(.secondary.opacity(0.08), in: RoundedRectangle(cornerRadius: 7))
+                }
+            }
+        }
+    }
+
+    private var loginItemSection: some View {
+        VStack(alignment: .leading, spacing: 7) {
+            Text("設定")
+                .font(.headline)
+
+            Toggle(
+                "ログイン時に起動",
+                isOn: Binding(
+                    get: { model.isLaunchAtLoginEnabled },
+                    set: { model.setLaunchAtLoginEnabled($0) }
+                )
+            )
+            .toggleStyle(.switch)
+
+            if model.launchAtLoginRequiresApproval {
+                HStack {
+                    Text("システム設定での許可が必要です。")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Button("ログイン項目を開く") {
+                        model.openLoginItemsSettings()
+                    }
+                    .controlSize(.small)
                 }
             }
         }
